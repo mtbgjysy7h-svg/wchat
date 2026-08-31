@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0b10" />
+  <title>LinkChat</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="setupBanner" class="setup-banner hidden">
+    Backend not connected yet. Open <b>config.js</b> and paste your Supabase Project URL + publishable key, then run <b>supabase-setup.sql</b> once.
+  </div>
+
+  <main id="authScreen" class="auth-wrap">
+    <section class="auth-card">
+      <div class="brand"><div class="logo">L</div> LinkChat</div>
+      <h1>Message your people.</h1>
+      <p>Persistent private chats, pictures, friend requests, and accounts that work across devices.</p>
+
+      <div class="tabs">
+        <button id="signInTab" class="tab active">Sign in</button>
+        <button id="signUpTab" class="tab">Create account</button>
+      </div>
+
+      <form id="authForm">
+        <div id="usernameField" class="field">
+          <label for="username">Username</label>
+          <input id="username" class="input" autocomplete="username" placeholder="paetyn_01" maxlength="24" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" class="input" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="At least 8 characters" required />
+        </div>
+        <div class="status">No email required. If you forget your password, an administrator must reset it.</div>
+        <button id="authSubmit" class="primary" type="submit">Sign in</button>
+        <div id="authStatus" class="status"></div>
+      </form>
+    </section>
+  </main>
+
+  <main id="appScreen" class="chat-app hidden">
+    <aside class="sidebar">
+      <div class="side-head">
+        <div class="profile-row">
+          <div id="myAvatar" class="avatar">?</div>
+          <div class="profile-main">
+            <div id="myName" class="profile-name">Loading...</div>
+            <div id="myUsername" class="profile-user"></div>
+          </div>
+          <button id="signOutBtn" class="icon-btn" title="Sign out">↪</button>
+        </div>
+        <div class="add-row">
+          <input id="friendUsername" class="input" placeholder="Add by username" maxlength="24" />
+          <button id="addFriendBtn" class="small-btn">Add</button>
+        </div>
+        <div class="theme-row">
+          <label for="themeSelect">Theme</label>
+          <select id="themeSelect" class="theme-select" aria-label="Color theme">
+            <option value="blue">Blue</option>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="purple">Purple</option>
+            <option value="orange">Orange</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="side-scroll">
+        <div class="section-title">Requests <span id="requestCount" class="badge hidden">0</span></div>
+        <div id="requestsList"></div>
+
+        <div class="section-title">Friends <span id="friendCount"></span></div>
+        <div id="friendsList"></div>
+      </div>
+    </aside>
+
+    <section id="chatPanel" class="chat-panel">
+      <div id="emptyChat" class="empty-chat"><div><strong>Select a friend</strong>Your saved messages will show up here.</div></div>
+      <div id="chatView" class="chat-view hidden">
+        <header class="chat-head">
+          <button id="mobileBack" class="icon-btn mobile-back">←</button>
+          <div id="chatAvatar" class="avatar">?</div>
+          <div class="chat-head-copy">
+            <div id="chatName" class="chat-head-name"></div>
+            <div id="chatUsername" class="chat-head-user"></div>
+          </div>
+          <div class="chat-actions">
+            <button id="voiceCallBtn" class="call-btn" title="Start voice call" aria-label="Start voice call">📞 <span>Voice</span></button>
+            <button id="videoCallBtn" class="call-btn" title="Start video call" aria-label="Start video call">🎥 <span>Video</span></button>
+            <button id="deleteChatBtn" class="danger-btn" title="Delete chat history for you">Delete chat</button>
+          </div>
+        </header>
+
+        <div id="messages" class="messages"></div>
+
+        <div class="composer-wrap">
+          <div id="imagePreview" class="image-preview hidden">
+            <img id="previewImg" alt="Selected image" />
+            <div id="previewName" class="friend-copy"></div>
+            <button id="removeImageBtn" class="icon-btn">×</button>
+          </div>
+          <form id="messageForm" class="composer">
+            <label class="attach" title="Send picture">📷<input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden /></label>
+            <textarea id="messageInput" class="input" rows="1" maxlength="4000" placeholder="Message..."></textarea>
+            <button id="sendBtn" class="send" type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Delete this chat?</h3>
+      <p>This clears the conversation <b>for you only</b>. Your friend stays on your friends list, and new messages can start the chat again.</p>
+      <div class="modal-actions">
+        <button id="cancelDeleteBtn" class="small-btn">Cancel</button>
+        <button id="confirmDeleteBtn" class="danger-btn">Delete chat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="callModal" class="call-overlay hidden" role="dialog" aria-modal="true" aria-label="LinkChat call">
+    <div class="call-shell">
+      <div class="call-top">
+        <div>
+          <div class="call-kicker">LinkChat Call</div>
+          <div id="callStatus" class="call-status">Connecting…</div>
+        </div>
+        <div id="callModeBadge" class="call-mode-badge">Video</div>
+      </div>
+
+      <div id="videoStage" class="video-stage">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <audio id="remoteAudio" autoplay></audio>
+        <div id="remoteCallAvatar" class="remote-call-avatar">?</div>
+
+        <div id="localTile" class="local-tile">
+          <video id="localVideo" autoplay playsinline muted></video>
+          <div id="localCallAvatar" class="local-call-avatar">Me</div>
+        </div>
+      </div>
+
+      <div class="call-person">
+        <div id="callPeerName" class="call-person-name">Friend</div>
+        <div id="callPeerUsername" class="call-person-user"></div>
+      </div>
+
+      <div id="incomingCallActions" class="call-controls incoming-actions hidden">
+        <button id="declineCallBtn" class="round-call danger" title="Decline call">✕</button>
+        <button id="acceptCallBtn" class="round-call accept" title="Accept call">✓</button>
+      </div>
+
+      <div id="activeCallControls" class="call-controls hidden">
+        <button id="muteCallBtn" class="round-call" title="Mute microphone">🎙</button>
+        <button id="cameraCallBtn" class="round-call" title="Turn camera off">📷</button>
+        <button id="hangupCallBtn" class="round-call danger wide" title="End call">End</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toast-wrap"></div>
+
+  <script src="./config.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
